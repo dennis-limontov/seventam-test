@@ -11,14 +11,20 @@ namespace SevenTam
         [SerializeField]
         private Image _shapeView;
 
-        private FigureType _figureType;
+        public FigureType FigureType { get; private set; }
+
+        public void MakeTransparent()
+        {
+            _animalView.color = Color.clear;
+            _shapeView.color = Color.clear;
+        }
 
         public void UpdateShape(FigureType figureType)
         {
             _animalView.sprite = figureType.animalSprite;
             _shapeView.sprite = figureType.shapeSprite;
             _shapeView.color = figureType.shapeColor;
-            _figureType = figureType;
+            FigureType = figureType;
         }
     }
 }

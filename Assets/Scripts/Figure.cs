@@ -13,7 +13,7 @@ namespace SevenTam
 
         private PolygonCollider2D _polygonCollider;
 
-        private FigureType _figureType;
+        public FigureType FigureType { get; private set; }
 
         private void Start()
         {
@@ -25,13 +25,13 @@ namespace SevenTam
             _shapeView.sprite = figureType.shapeSprite;
             _shapeView.color = figureType.shapeColor;
             _polygonCollider = gameObject.AddComponent<PolygonCollider2D>();
-            _figureType = figureType;
+            FigureType = figureType;
         }
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            EventBus.OnFigureClicked?.Invoke(_figureType);
-            Destroy(gameObject);
+            EventBus.OnFigureClicked?.Invoke(this);
+            EventBus.OnFigureTypeClicked?.Invoke(FigureType);
         }
     }
 }
