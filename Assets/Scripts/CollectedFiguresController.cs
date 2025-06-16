@@ -9,40 +9,46 @@ namespace SevenTam
     {
         private const int FIGURES_COUNT_TO_COLLECT = 3;
         private const int FIGURES_MAX_COUNT = 7;
+
+        public static CollectedFiguresController Instance { get; private set; }
         
         [SerializeField]
         private FigureUI _figureUIPrefab;
 
-        private List<FigureUI> _collectedFigures = new List<FigureUI>();
+        public List<FigureUI> CollectedFigures { get; private set; } = new List<FigureUI>();
 
         private FigureUI _figureUICrutch;
 
         private void OnDestroy()
         {
+            EventBus.OnRestartClicked -= RestartClickedHandler;
             EventBus.OnFigureTypeClicked -= FigureClickedHandler;
         }
 
         private void Start()
         {
             EventBus.OnFigureTypeClicked += FigureClickedHandler;
+            EventBus.OnRestartClicked += RestartClickedHandler;
+
+            Instance = this;
         }
 
         private void FigureClickedHandler(FigureType figureType)
         {
             FigureUI figureUI = Instantiate(_figureUIPrefab, transform);
             figureUI.UpdateShape(figureType);
-            _collectedFigures.Add(figureUI);
-            var equalFigures = _collectedFigures.Where(x => (x.FigureType == figureUI.FigureType)).ToList();
+            CollectedFigures.Add(figureUI);
+            var equalFigures = CollectedFigures.Where(x => (x.FigureType == figureUI.FigureType)).ToList();
             if (equalFigures.Count == FIGURES_COUNT_TO_COLLECT)
             {
                 EventBus.OnEqualFiguresCollected?.Invoke();
                 foreach (var figure in equalFigures)
                 {
-                    _collectedFigures.Remove(figure);
+                    CollectedFigures.Remove(figure);
                     Destroy(figure.gameObject);
                 }
             }
-            if (_collectedFigures.Count >= FIGURES_MAX_COUNT)
+            if (CollectedFigures.Count >= FIGURES_MAX_COUNT)
             {
                 EventBus.OnGameEnded?.Invoke(false);
             }
@@ -56,6 +62,15 @@ namespace SevenTam
             yield return null;
 
             Destroy(_figureUICrutch.gameObject);
+        }
+
+        private void RestartClickedHandler()
+        {
+            foreach (var figureUI in CollectedFigures)
+            {
+                Destroy(figureUI.gameObject);
+            }
+            CollectedFigures.Clear();
         }
     }
 }

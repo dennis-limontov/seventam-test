@@ -52,8 +52,8 @@ namespace SevenTam
 
         public void OnRestartClicked()
         {
-            /*gameObject.SetActive(false);
-            EventBus.OnRestartClicked?.Invoke();*/
+            gameObject.SetActive(false);
+            EventBus.OnRestartClicked?.Invoke();
         }
     }
 }

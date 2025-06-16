@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -20,12 +21,21 @@ namespace SevenTam
         private Figure _figurePrefab;
 
         [SerializeField]
+        [Range(0f, 1f)]
+        private float _figureIsHeavyChance = 0.3f;
+
+        [SerializeField]
         private int _figureCount = 20;
 
         [SerializeField]
         private Transform _figureRespawnPoint;
 
+        [SerializeField]
+        private float _figureGeneratePause = 0.05f;
+
         private List<Figure> _figures = new List<Figure>();
+
+        private Coroutine _generateCoroutine;
 
         private void OnDestroy()
         {
@@ -40,7 +50,7 @@ namespace SevenTam
             EventBus.OnFigureClicked += FigureClickedHandler;
             EventBus.OnRestartClicked += RestartClickedHandler;
 
-            Generate();
+            _generateCoroutine = StartCoroutine(Generate(false));
         }
 
         private void EqualFiguresCollectedHandler()
@@ -59,19 +69,55 @@ namespace SevenTam
 
         private void RestartClickedHandler()
         {
-            Generate();
+            StopCoroutine(_generateCoroutine);
+            _generateCoroutine = StartCoroutine(Generate(false));
         }
 
-        public void Generate()
+        public IEnumerator Generate(bool isLevelInProgress)
         {
             FigureType figureType;
-            for (int i = 0; i < _figureCount; i++)
+            Dictionary<FigureType, int> uniqueCollectedFigures = new Dictionary<FigureType, int>();
+            int remainedFiguresCount = _figureCount, figuresCount = _figures.Count;
+
+            foreach (var figure in _figures)
+            {
+                Destroy(figure.gameObject);
+            }
+            _figures.Clear();
+
+            if (isLevelInProgress)
+            {
+                remainedFiguresCount = figuresCount;
+
+                foreach (var collectedFigure in CollectedFiguresController.Instance.CollectedFigures)
+                {
+                    if (!uniqueCollectedFigures.TryAdd(collectedFigure.FigureType, 1))
+                    {
+                        uniqueCollectedFigures[collectedFigure.FigureType]++;
+                    }
+                }
+
+                foreach (var uniqueCollectedFigure in uniqueCollectedFigures)
+                {
+                    for (int i = 0; i < FIGURE_COUNT_MODIFIER - uniqueCollectedFigure.Value; i++)
+                    {
+                        _figures.Add(GenerateFigureView(uniqueCollectedFigure.Key));
+                        yield return new WaitForSeconds(_figureGeneratePause);
+                        remainedFiguresCount--;
+                    }
+                }
+
+                remainedFiguresCount /= FIGURE_COUNT_MODIFIER;
+            }
+
+            for (int i = 0; i < remainedFiguresCount; i++)
             {
                 figureType = GenerateFigureType();
-                
+
                 for (int j = 0; j < FIGURE_COUNT_MODIFIER; j++)
                 {
                     _figures.Add(GenerateFigureView(figureType));
+                    yield return new WaitForSeconds(_figureGeneratePause);
                 }
             }
         }
@@ -88,7 +134,17 @@ namespace SevenTam
         {
             Figure figure = Instantiate(_figurePrefab, _figureRespawnPoint);
             figure.UpdateShape(figureType);
+            if (_figureIsHeavyChance >= Random.Range(0f, 1f))
+            {
+                figure.gameObject.AddComponent<FigureWeight>();
+            }
             return figure;
+        }
+
+        public void OnRefreshClicked()
+        {
+            StopCoroutine(_generateCoroutine);
+            _generateCoroutine = StartCoroutine(Generate(true));
         }
     }
 }
