@@ -4,6 +4,7 @@ namespace SevenTam
 {
     public static class EventBus
     {
+        public static Action<int> OnDefrostingCounterChanged;
         public static Action OnEqualFiguresCollected;
         public static Action<Figure> OnFigureClicked;
         public static Action<FigureType> OnFigureTypeClicked;

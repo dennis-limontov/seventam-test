@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace SevenTam
 {
@@ -25,7 +26,7 @@ namespace SevenTam
         private float _figureIsHeavyChance = 0.3f;
 
         [SerializeField]
-        private int _figureCount = 20;
+        private int _figuresCount = 20;
 
         [SerializeField]
         private Transform _figureRespawnPoint;
@@ -33,9 +34,32 @@ namespace SevenTam
         [SerializeField]
         private float _figureGeneratePause = 0.05f;
 
+        [SerializeField]
+        private int _figuresDefrostingCount = 4;
+
+        [SerializeField]
+        private float _figuresFreezingMaxPercent = 0.3f;
+
+        [SerializeField]
+        [Range(0f, 1f)]
+        private float _figureIsFreezyChance = 0.15f;
+
+        [SerializeField]
+        private Sprite _figureFreezingSprite;
+
+        [SerializeField]
+        private float _figureFreezingSpriteScale = 0.25f;
+
+        [SerializeField]
+        private Button _refreshButton;
+
         private List<Figure> _figures = new List<Figure>();
 
         private Coroutine _generateCoroutine;
+
+        private int _figuresRemainDefrostingCounter;
+
+        private int _figuresFreezingCounter;
 
         private void OnDestroy()
         {
@@ -59,6 +83,10 @@ namespace SevenTam
             {
                 EventBus.OnGameEnded?.Invoke(true);
             }
+            if (_figuresRemainDefrostingCounter > 0)
+            {
+                EventBus.OnDefrostingCounterChanged?.Invoke(--_figuresRemainDefrostingCounter);
+            }
         }
 
         private void FigureClickedHandler(Figure figure)
@@ -77,8 +105,9 @@ namespace SevenTam
         {
             FigureType figureType;
             Dictionary<FigureType, int> uniqueCollectedFigures = new Dictionary<FigureType, int>();
-            int remainedFiguresCount = _figureCount, figuresCount = _figures.Count;
-
+            int remainedFiguresCount = _figuresCount, figuresCount = _figures.Count;
+            _refreshButton.interactable = false;
+            
             foreach (var figure in _figures)
             {
                 Destroy(figure.gameObject);
@@ -109,6 +138,13 @@ namespace SevenTam
 
                 remainedFiguresCount /= FIGURE_COUNT_MODIFIER;
             }
+            else
+            {
+                _figuresRemainDefrostingCounter = _figuresDefrostingCount;
+                EventBus.OnDefrostingCounterChanged?.Invoke(_figuresRemainDefrostingCounter);
+            }
+
+            _figuresFreezingCounter = (int)((remainedFiguresCount * FIGURE_COUNT_MODIFIER) * _figuresFreezingMaxPercent);
 
             for (int i = 0; i < remainedFiguresCount; i++)
             {
@@ -120,6 +156,9 @@ namespace SevenTam
                     yield return new WaitForSeconds(_figureGeneratePause);
                 }
             }
+
+            _refreshButton.interactable = true;
+            EventBus.OnDefrostingCounterChanged?.Invoke(_figuresRemainDefrostingCounter);
         }
 
         public FigureType GenerateFigureType()
@@ -137,6 +176,12 @@ namespace SevenTam
             if (_figureIsHeavyChance >= Random.Range(0f, 1f))
             {
                 figure.gameObject.AddComponent<FigureWeight>();
+            }
+            if ((_figuresFreezingCounter > 0) && (_figureIsFreezyChance >= Random.Range(0f, 1f)))
+            {
+                FigureFreezing figureFreezing = figure.gameObject.AddComponent<FigureFreezing>();
+                figureFreezing.SetFreezing(_figureFreezingSprite, _figureFreezingSpriteScale);
+                _figuresFreezingCounter--;
             }
             return figure;
         }

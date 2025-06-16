@@ -222,7 +222,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _animalView: {fileID: 1442139156114685282}
-  _shapeView: {fileID: 4825760801876335413}
 --- !u!50 &8281477187815549469
 Rigidbody2D:
   serializedVersion: 5
